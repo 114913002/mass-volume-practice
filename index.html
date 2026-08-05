@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>天平與排水法解謎遊戲</title>
+<style>
+  body {
+    font-family: "Microsoft JhengHei", Arial, sans-serif;
+    background: linear-gradient(135deg,#dfe9f3,#ffffff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 30px;
+    max-width: 520px;
+    width: 90%;
+    text-align: center;
+  }
+  h1 {
+    color: #2c3e50;
+    font-size: 22px;
+  }
+  #progress {
+    color: #888;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  #question {
+    font-size: 18px;
+    margin: 20px 0;
+    color: #333;
+    min-height: 60px;
+  }
+  #answerInput {
+    width: 80%;
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    outline: none;
+  }
+  #submitBtn {
+    margin-top: 12px;
+    padding: 10px 22px;
+    border: none;
+    border-radius: 10px;
+    background: #3498db;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #submitBtn:hover {
+    background: #2980b9;
+  }
+  #feedback {
+    margin-top: 15px;
+    font-weight: bold;
+    min-height: 50px;
+    font-size: 16px;
+  }
+  .correct-text { color: #27ae60; }
+  .wrong-text { color: #c0392b; }
+  #nextBtn {
+    margin-top: 10px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    background: #34495e;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: none;
+  }
+  #scoreBoard {
+    margin-top: 15px;
+    color: #555;
+    font-size: 15px;
+  }
+  #passMessage {
+    font-size: 22px;
+    font-weight: bold;
+    color: #d35400;
+    margin: 20px 0;
+    display: none;
+  }
+  #restartBtn {
+    margin-top: 20px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 10px;
+    background: #16a085;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>⚖️💧 天平與排水法解謎遊戲</h1>
+  <div id="progress"></div>
+  <div id="question"></div>
+
+  <div id="answerArea">
+    <input type="text" id="answerInput" placeholder="請輸入你的答案">
+    <br>
+    <button id="submitBtn">送出答案</button>
+  </div>
+
+  <div id="feedback"></div>
+  <button id="nextBtn">下一題 ➜</button>
+
+  <div id="passMessage"></div>
+  <div id="scoreBoard"></div>
+  <button id="restartBtn">🔄 重新挑戰</button>
+</div>
+
+<script>
+// ===================== 題庫：共 50 題 =====================
+// answers: 可接受的多種答案寫法（會自動忽略大小寫與空白）
+const allQuestions = [
+
+  // ---------- 天平測量質量（25題） ----------
+  { q: "使用天平前，指針未平衡時應該先做什麼動作？", answers: ["調零","调零","歸零","归零","調整零點"], tip: "使用前必須先「調零」，確保天平在無負載時保持平衡。" },
+  { q: "測量時，待測物通常放在天平的哪一邊？", answers: ["左盤","左邊","左側","left"], tip: "慣例是「左物右碼」，物體放左盤，砝碼放右盤。" },
+  { q: "加減砝碼時，應該用什麼工具夾取？", answers: ["鑷子"], tip: "使用鑷子夾取砝碼，避免手上油汗影響砝碼質量。" },
+  { q: "加砝碼時，建議依照什麼順序放入比較準確？", answers: ["由大到小","大到小"], tip: "由大到小加入可以較快、較準確地逼近平衡點。" },
+  { q: "天平能辨別出的最小質量差稱為什麼？", answers: ["感量","靈敏度"], tip: "感量（靈敏度）代表天平能分辨的最小質量變化。" },
+  { q: "測量液體質量時，需要先測量什麼再相減？", answers: ["容器質量","容器","空瓶","空杯","空容器"], tip: "先測空容器質量，再測「容器+液體」，兩者相減即為液體質量。" },
+  { q: "測量粉末狀物質時，應該放在什麼上面稱重？", answers: ["稱量紙","燒杯","表玻璃"], tip: "應使用稱量紙、燒杯或表玻璃盛裝，避免污染或損壞天平。" },
+  { q: "使用完天平後，砝碼應該如何處理？", answers: ["歸位","放回原位","收好","歸還砝碼盒"], tip: "使用完畢後應將砝碼放回原位，保持天平整潔完好。" },
+  { q: "天平應該放置在什麼樣的桌面上才能準確測量？", answers: ["水平","水平桌面","平坦"], tip: "天平需放置在水平、穩定、無震動的桌面上。" },
+  { q: "指針靜止在中央刻度代表天平處於什麼狀態？", answers: ["平衡"], tip: "指針靜止在中央表示天平左右質量相等，已達到平衡。" },
+  { q: "用來微調小數點後質量的裝置稱為什麼？", answers: ["游碼"], tip: "游碼可在標尺上滑動，用於微調較小的質量數值。" },
+  { q: "如果左盤比較重，指針會偏向哪一側？", answers: ["左","左邊","左側"], tip: "哪一側較重，指針就會偏向那一側。" },
+  { q: "天平未放置任何物體時，指針靜止的位置稱為什麼？", answers: ["零點"], tip: "零點是天平空載時指針靜止的基準位置。" },
+  { q: "如果測量物體超過天平最大量程，可能造成什麼結果？", answers: ["損壞","無法平衡","故障"], tip: "超過最大量程可能損壞天平機構，或使其無法達到平衡。" },
+  { q: "為什麼不能直接用手拿砝碼？", answers: ["手汗","油脂","影響精度","影響質量","會生鏽"], tip: "手上的油汗會附著在砝碼上，影響砝碼原本的質量。" },
+  { q: "天平托盤應該保持什麼狀態才能準確測量？", answers: ["乾淨","乾燥","乾淨乾燥"], tip: "殘留物、灰塵或水分都會造成額外重量，影響測量準確度。" },
+  { q: "為確保測量準確，使用天平前應該先做什麼？", answers: ["校正","校準","調零"], tip: "使用前應先校正、調零，確保測量基準正確。" },
+  { q: "天平的總質量等於所有砝碼質量加上什麼？", answers: ["游碼讀數","游碼","游碼指示值"], tip: "總質量 = 砝碼質量總和 + 游碼所指示的微小質量。" },
+  { q: "天平應避免在什麼樣的環境下使用？", answers: ["有風","震動","強風","不穩定"], tip: "強風或震動會使指針無法穩定，影響測量結果。" },
+  { q: "天平上的平衡調整螺絲，主要作用是什麼？", answers: ["使天平水平","調整平衡","校正水平"], tip: "用於在無負載時，把天平調整到水平平衡狀態。" },
+  { q: "天平測量原理，主要是利用什麼力的平衡？", answers: ["重力","地心引力"], tip: "天平利用左右兩側重力平衡的原理來比較質量。" },
+  { q: "天平左右兩側質量相同時，稱為達到什麼狀態？", answers: ["平衡"], tip: "當左右質量相等，天平達到平衡狀態，即可讀取質量。" },
+  { q: "測量精細藥品時，建議使用哪一種天平比較準確？", answers: ["電子天平","精密天平"], tip: "電子天平（精密天平）精度較高，適合測量少量精細物質。" },
+  { q: "天平的「量程」指的是什麼？", answers: ["最大稱重範圍","最大測量值","最大負載"], tip: "量程是天平能夠測量的最大質量範圍。" },
+  { q: "若天平指針持續偏向一邊不停止，可能是什麼原因？", answers: ["未達平衡","還沒平衡","需要調整砝碼"], tip: "表示天平尚未達到平衡，需要繼續增減砝碼調整。" },
+
+  // ---------- 排水法測量體積（25題） ----------
+  { q: "排水法主要用來測量物體的什麼？", answers: ["體積"], tip: "排水法是利用物體排開水的體積，來測量不規則物體的體積。" },
+  { q: "使用排水法時，通常需要用到什麼量測工具？", answers: ["量筒","量杯"], tip: "量筒是排水法中常用來讀取水位刻度的工具。" },
+  { q: "排水法是利用物體排開的什麼來計算體積？", answers: ["水量","水的體積"], tip: "物體浸入水中所排出的水量，等於物體本身的體積。" },
+  { q: "量筒原有水位50mL，放入物體後水位上升到75mL，物體體積是多少mL？", answers: ["25","25ml","25毫升"], tip: "75 - 50 = 25，所以物體體積為 25mL。" },
+  { q: "排水法特別適合用來測量規則形狀還是不規則形狀的物體？", answers: ["不規則","不規則形狀"], tip: "規則物體可直接用公式計算，不規則物體才需要排水法。" },
+  { q: "使用排水法前，量筒中應先加入什麼？", answers: ["水","適量的水"], tip: "需先在量筒中加入適量的水，作為測量基準水位。" },
+  { q: "若物體會溶於水，是否適合使用排水法測量？", answers: ["不適合","不行","否"], tip: "物體若溶於水會改變水的體積，導致測量結果不準確。" },
+  { q: "使用排水法測量體積時，物體必須怎麼樣才能得到準確結果？", answers: ["沉入水中","浸沒","完全泡水","完全沉沒"], tip: "物體必須完全浸沒在水中，才能準確排出等體積的水量。" },
+  { q: "量筒中水位的上升量，代表的是什麼？", answers: ["物體的體積","體積"], tip: "水位上升的量，就等於放入物體的體積。" },
+  { q: "原始水位是30mL，放入物體後變成42mL，物體體積是多少mL？", answers: ["12","12ml","12毫升"], tip: "42 - 30 = 12，物體體積為 12mL。" },
+  { q: "排水法適合用來測量會吸水膨脹的物體嗎？", answers: ["不適合","不行","否"], tip: "物體吸水膨脹會改變自身體積，導致測量不準確。" },
+  { q: "使用排水法時，量筒應該放置在什麼樣的表面上？", answers: ["水平","水平桌面"], tip: "量筒需放在水平桌面上，才能準確讀取刻度。" },
+  { q: "排水法所使用的容器，除了量筒，還可能使用什麼？", answers: ["量杯","溢水杯","燒杯"], tip: "溢水杯、量杯、燒杯都可以用來進行排水法測量。" },
+  { q: "讀取量筒刻度時，視線應該與液面呈什麼角度？", answers: ["水平","平視"], tip: "視線應與液面刻度保持水平，避免視差造成誤差。" },
+  { q: "若物體體積比量筒容量還大，應該怎麼辦？", answers: ["換更大的量筒","使用溢水法","用大容器"], tip: "應改用容量更大的量筒或溢水杯來進行測量。" },
+  { q: "排水法計算公式是：物體體積 = 水位上升後 減去 什麼？", answers: ["原始水位","水位上升前","初始水位"], tip: "物體體積 = 最終水位 - 原始水位。" },
+  { q: "初始水位是20mL，最終水位是55mL，物體體積是多少mL？", answers: ["35","35ml","35毫升"], tip: "55 - 20 = 35，物體體積為 35mL。" },
+  { q: "排水法的變化型，利用容器邊緣讓多餘水流出的方法稱為什麼？", answers: ["溢水法"], tip: "溢水法是利用溢水杯讓多餘的水流出，再測量流出的水量。" },
+  { q: "若量筒內有氣泡附著在物體上，會如何影響測量結果？", answers: ["體積誤差變大","體積測量不準","誤差"], tip: "氣泡會佔據額外空間，使測得的體積比實際值偏大。" },
+  { q: "排水法主要應用於哪個科學領域最常見？", answers: ["物理","科學實驗","物理實驗"], tip: "排水法常用於物理與科學實驗中測量不規則物體體積。" },
+  { q: "若物體浮在水面無法完全沉入，該怎麼處理才能用排水法測量？", answers: ["用重物壓入水中","加重物","用工具壓入水中","用針壓入水中"], tip: "可用細針或重物將浮起的物體壓入水中，使其完全浸沒。" },
+  { q: "排水法中，量筒讀數的常見單位是什麼？", answers: ["ml","毫升","mL"], tip: "量筒常用單位為 mL（毫升）。" },
+  { q: "初始水位是10mL，最終水位是18mL，物體體積是多少mL？", answers: ["8","8ml","8毫升"], tip: "18 - 10 = 8，物體體積為 8mL。" },
+  { q: "使用排水法測量體積時，最需注意物體不能發生什麼現象才能準確？", answers: ["溶解","吸水","變形"], tip: "物體若溶解、吸水或變形，都會導致體積測量產生誤差。" },
+  { q: "排水法算出的體積(mL)，可以直接換算成哪個常見單位？", answers: ["cm3","立方公分","公分立方"], tip: "1 毫升(mL) 等於 1 立方公分(cm³)。" }
+];
+
+// ===================== 遊戲邏輯 =====================
+const REQUIRED_CORRECT = 10; // 過關所需正確題數
+
+let questions = [];
+let currentIndex = 0;
+let correctCount = 0;
+let answered = 0;
+
+const questionEl = document.getElementById("question");
+const progressEl = document.getElementById("progress");
+const answerInput = document.getElementById("answerInput");
+const submitBtn = document.getElementById("submitBtn");
+const feedbackEl = document.getElementById("feedback");
+const nextBtn = document.getElementById("nextBtn");
+const scoreBoardEl = document.getElementById("scoreBoard");
+const passMessageEl = document.getElementById("passMessage");
+const restartBtn = document.getElementById("restartBtn");
+const answerArea = document.getElementById("answerArea");
+
+// Fisher-Yates 洗牌，確保每次進入題目順序都不同
+function shuffle(array) {
+  const arr = array.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// 答案正規化：去除空白、轉小寫，方便比對
+function normalize(str) {
+  return str.trim().toLowerCase().replace(/\s+/g, "").replace(/[，,。.！!？?]/g, "");
+}
+
+function isCorrect(question, userAnswer) {
+  const u = normalize(userAnswer);
+  if (!u) return false;
+  return question.answers.some(a => {
+    const an = normalize(a);
+    return u === an || u.includes(an) || an.includes(u);
+  });
+}
+
+function startGame() {
+  questions = shuffle(allQuestions); // 每次重新隨機排列 50 題
+  currentIndex = 0;
+  correctCount = 0;
+  answered = 0;
+
+  passMessageEl.style.display = "none";
+  passMessageEl.textContent = "";
+  restartBtn.style.display = "none";
+  scoreBoardEl.textContent = "";
+  answerArea.style.display = "block";
+
+  showQuestion();
+}
+
+function showQuestion() {
+  const current = questions[currentIndex];
+  progressEl.textContent = `已作答：${answered} 題　｜　正確：${correctCount} / ${REQUIRED_CORRECT}`;
+  questionEl.textContent = `第 ${answered + 1} 題：${current.q}`;
+  feedbackEl.textContent = "";
+  feedbackEl.className = "";
+  nextBtn.style.display = "none";
+  answerInput.value = "";
+  answerInput.disabled = false;
+  submitBtn.disabled = false;
+  answerArea.style.display = "block";
+  answerInput.focus();
+}
+
+function submitAnswer() {
+  const current = questions[currentIndex];
+  const userAnswer = answerInput.value;
+
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+  answered++;
+
+  if (isCorrect(current, userAnswer)) {
+    correctCount++;
+    feedbackEl.className = "correct-text";
+    feedbackEl.textContent = "✅ 正確！ " + current.tip;
+  } else {
+    feedbackEl.className = "wrong-text";
+    feedbackEl.textContent = "❌ 再加油！ " + current.tip + "（正確答案參考：" + current.answers[0] + "）";
+  }
+
+  progressEl.textContent = `已作答：${answered} 題　｜　正確：${correctCount} / ${REQUIRED_CORRECT}`;
+
+  // 達成過關條件：立即結束遊戲
+  if (correctCount >= REQUIRED_CORRECT) {
+    setTimeout(showPass, 600);
+    return;
+  }
+
+  // 題目用完但尚未過關
+  if (currentIndex + 1 >= questions.length) {
+    setTimeout(showFail, 600);
+    return;
+  }
+
+  nextBtn.style.display = "inline-block";
+}
+
+function showPass() {
+  answerArea.style.display = "none";
+  nextBtn.style.display = "none";
+  questionEl.textContent = "";
+  feedbackEl.textContent = "";
+  progressEl.textContent = `總共作答 ${answered} 題，正確 ${correctCount} 題`;
+  passMessageEl.style.display = "block";
+  passMessageEl.textContent = "🎉 可以回到皇宮線索室繼續解題囉!";
+  restartBtn.style.display = "inline-block";
+}
+
+function showFail() {
+  answerArea.style.display = "none";
+  nextBtn.style.display = "none";
+  questionEl.textContent = "😢 題目已全部作答完畢，尚未達成過關條件。";
+  feedbackEl.textContent = "";
+  progressEl.textContent = "";
+  scoreBoardEl.textContent = `最終成績：正確 ${correctCount} / ${REQUIRED_CORRECT}（未過關），請再挑戰一次！`;
+  restartBtn.style.display = "inline-block";
+}
+
+submitBtn.onclick = submitAnswer;
+
+answerInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !answerInput.disabled) {
+    submitAnswer();
+  }
+});
+
+nextBtn.onclick = () => {
+  currentIndex++;
+  showQuestion();
+};
+
+restartBtn.onclick = startGame;
+
+// 進入頁面時自動開始（隨機出題）
+startGame();
+</script>
+
+</body>
+</html>
